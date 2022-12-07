@@ -1,24 +1,46 @@
 import serial
 import time
+import numpy as np
+from collections import deque
+import warnings
+import itertools
+import csv
 
 
-hw_sensor = serial.Serial(port='COM6', baudrate=9600)
-hw_sensor.flushInput()
+hw_sensor = serial.Serial(port='/dev/ttyACM0', baudrate=9600)
+hw_sensor.setDTR(False)
 time.sleep(.1)
+hw_sensor.flushInput()
+hw_sensor.setDTR(True)
 
-file_name = 'up_down_5.csv'
+label = 'up_down'
+count_file = 6
 
-f = open(file_name, 'w', newline='')
-f.write("aX,aY,aZ,gX,gY,gZ\n")
+M = []
+data = []
 
-while True:
-    while hw_sensor.inWaiting():
+f = open(f'{label}_6.csv', 'a')
+w = csv.writer(f)
+
+with hw_sensor:
+    while True:
         try:
-            line = hw_sensor.readline().decode('ascii', errors='replace')
-            print(line, end='')
-            f.write(line)
-        except serial.SerialException:
-            pass
+            line = hw_sensor.readline()
+            if not line:
+                # HACK: Descartamos líneas vacías porque fromstring produce
+                # resultados erróneos, ver https://github.com/numpy/numpy/issues/1714
+                continue
+            # M.append(np.fromstring(line.decode('ascii', errors='replace'), sep=','))
+            # data.append(yy)
+            tmp = line.decode('ascii', errors='replace').rstrip().split(',')
+            if (len(tmp) >= 5):
+                data.append(tmp)
+
+            if (len(data) == 119):
+                r = input('¿Guardar?')
+                if (r == 's'):
+                    w.writerow(list(itertools.chain(*data)) + [label])
+                data = []
         except KeyboardInterrupt:
-            f.close()
-            hw_sensor.close()
+            print("Exiting")
+            break
