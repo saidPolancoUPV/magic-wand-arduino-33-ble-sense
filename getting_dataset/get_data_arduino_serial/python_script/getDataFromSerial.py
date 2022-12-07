@@ -13,15 +13,17 @@ time.sleep(.1)
 hw_sensor.flushInput()
 hw_sensor.setDTR(True)
 
-label = 'up_down'
-count_file = 6
+label = 'circle'
+count_file = 7
 
 M = []
 data = []
 
-f = open(f'{label}_6.csv', 'a')
+f = open(f'{label}_{count_file}.csv', 'a')
 w = csv.writer(f)
 
+# write the header
+w.writerow(['aX', 'aY', 'aZ', 'gX', 'gY', 'gZ'])
 with hw_sensor:
     while True:
         try:
@@ -39,7 +41,9 @@ with hw_sensor:
             if (len(data) == 119):
                 r = input('¿Guardar?')
                 if (r == 's'):
-                    w.writerow(list(itertools.chain(*data)) + [label])
+                    for d in data:
+                        w.writerow(d)
+                    w.writerow([])
                 data = []
         except KeyboardInterrupt:
             print("Exiting")
